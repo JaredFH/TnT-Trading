@@ -4,7 +4,10 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, \
                         login_required, current_user 
 from flask_bcrypt import Bcrypt
 
-app = Flask(__name__)
+app = Flask(__name__, 
+            template_folder="platform/templates",
+    static_folder="platform/static"
+)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:password@localhost/tnt_auth"
 app.config["SECRET_KEY"] = "password"
@@ -50,7 +53,7 @@ def register():
         db.session.commit()
         return redirect(url_for("login"))
 
-    return render_template("sign_up.html")
+    return render_template("auth/register.html")
 
 # ROUTE - Login
 @app.route('/login', methods=["GET", "POST"])
