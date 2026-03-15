@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - TnT</title>
+</head>
+
+<body>
+
+<nav>
+    <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/logout">Logout</a></li>
+    </ul>
+</nav>
+
+{% if current_user.is_authenticated %}
+
+<h1> Admin Dashboard</h1>
+
+<p> Welcome, {{ current_user.username }}! </p>
+
+<h2> Admin Controls </h2>
+
+<ul>
+
+    <li> Create Stock</li>
+    <li> Edit Stocks & Market Hours</li>
+    <li> View User Account Information</li>
+    
+</ul>
+
+{% else %}
+
+<h1>You must be logged in to view this page.</h1>
+
+{% endif %}
+
+
+
+</body>
+
+
+</html>
