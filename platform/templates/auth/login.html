@@ -8,32 +8,38 @@
 </head>
 
 <body>
-    <nav>
-        <ul>
-            <li><a href="/login">Login</a></li>
-            <li><a href="/register">Create account</a></li>
-        </ul>
-    </nav>
-    
-    <div class="page-container">
-        <div class="card">
-            <h1>TnT Stock Platform</h1>
-            <h2>Login to your account</h2>
 
-            <form action="/login" method="post">
-                    <div class="form-group"></div>
-                        <label for="username">Username:</label>
-                        <input type="text" name="username" required>
-                    </div>
-    
-                    <div class="form-group"></div>
-                        <label for="password">Password:</label>
-                        <input type="password" name="password" required>
-                    </div>
-    
-                    <button type="submit">Submit</button>
-            </form>
-        </div>
+<nav>
+    <ul>
+        <li><a href="/login">Login</a></li>
+        <li><a href="/register">Create account</a></li>
+    </ul>
+</nav>
+
+<div class="page-container">
+    <div class="card">
+
+        <h1>TnT Stock Platform</h1>
+        <h2>Login to your account</h2>
+
+        <form action="/login" method="post">
+
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <button type="submit">Submit</button>
+
+        </form>
+
     </div>
+</div>
+
 </body>
 </html>
