@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Register</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
 <body>
@@ -15,23 +16,27 @@
     </ul>
 </nav>
 
-<h1>Create an account</h1>
+ <div class="page-container">
+        <div class="card">
+            <h1>Create an account</h1>
 
-<form action="{{ url_for('register') }}" method="post">
+            <form action="{{ url_for('register') }}" method="post">
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" name="username" required>
+                </div>
 
-<label>Username:</label>
-<input type="text" name="username" required>
 
-<br><br>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" name="password" required>
+                </div>
 
-<label>Password:</label>
-<input type="password" name="password" required>
 
-<br><br>
+                <button type="submit">Create Account</button>
 
-<button type="submit">Create Account</button>
-
-</form>
+            </form>
+    </div>
 
 </body>
 </html>

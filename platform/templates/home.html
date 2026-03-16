@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Trading & Training (TnT)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
 <body>
@@ -19,24 +20,32 @@
         </ul>
     </nav>
 
-    {% if current_user.is_authenticated %}
-    <h1>Welcome, {{ current_user.username }}!</h1>
+    <div class="page-container">
+        <div class="card">
+            {% if current_user.is_authenticated %}
+            <h1>Welcome, {{ current_user.username }}!</h1>
 
-    {% if current_user.role == "admin" %}
-    <h2>Admin Dashboard</h2>
-    <p>This is visible only to admins.</p>
+            {% if current_user.role == "admin" %}
+            <h2>Admin Dashboard</h2>
+            <div class="message-box">
+                <p>This is visible only to admins.</p>
+            </div>
 
-    {% elif current_user.role == "user" %}
-    <h2>User Dashboard</h2>
-    <p>This is visible only to regular users.</p>
+            {% elif current_user.role == "user" %}
+            <h2>User Dashboard</h2>
+            <div class="message-box">
+                <p>This is visible only to regular users.</p>
+            </div>
 
-    {% endif %}
+            {% endif %}
 
-    {% else %}
+            {% else %}
 
-    <h1>You are not logged in</h1>
+            <h1>You are not logged in</h1>
 
-    {% endif %}
+            {% endif %}
+        </div>
+    </div>
 </body>
 
 </html>

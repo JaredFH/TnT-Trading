@@ -6,7 +6,7 @@ from flask_bcrypt import Bcrypt
 
 app = Flask(__name__, 
             template_folder="platform/templates",
-    static_folder="platform/static"
+            static_folder="platform/static"
 )
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:password@localhost/tnt_auth"
