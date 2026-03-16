@@ -26,13 +26,13 @@
             <h1>Welcome, {{ current_user.username }}!</h1>
 
             {% if current_user.role == "admin" %}
-            <h2>Admin Dashboard</h2>
+            <h2>Admin Homepage</h2>
             <div class="message-box">
                 <p>This is visible only to admins.</p>
             </div>
 
             {% elif current_user.role == "user" %}
-            <h2>User Dashboard</h2>
+            <h2>User Homepage</h2>
             <div class="message-box">
                 <p>This is visible only to regular users.</p>
             </div>
