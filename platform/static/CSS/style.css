@@ -4,45 +4,57 @@ body {
     color: #f5f5f5;
     margin: 0;
     padding: 0;
+    min-height: 100vh;
 }
 
 /* NAVBAR */
 
-nav {
+.custom-navbar {
     background-color: #0b0b0b;
     border-bottom: 3px solid #c1121f;
-    padding: 15px 30px;
+    padding-top: 14px;
+    padding-bottom: 14px;
 }
 
-nav ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    gap: 20px;
-}
-
-nav ul li a {
-    color: #f5f5f5;
-    text-decoration: none;
+.brand-title {
+    color: #f5f5f5 !important;
     font-weight: bold;
+    font-size: 1.2rem;
 }
 
-nav ul li a:hover {
-    color: #fcbf49;
+.navbar .nav-link {
+    color: #f5f5f5 !important;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.navbar .nav-link:hover {
+    color: #fcbf49 !important;
+}
+
+.custom-toggler {
+    border: 1px solid #fcbf49;
+}
+
+.custom-toggler:focus {
+    box-shadow: none;
+}
+
+.navbar-toggler-icon {
+    filter: invert(1);
 }
 
 /* PAGE LAYOUT */
 
 .page-container {
-    max-width: 900px;
+    max-width: 1000px;
     margin: 70px auto;
     padding: 20px;
 }
 
 /* CARD */
 
-.card {
+.card-custom {
     background: #1c1c1c;
     border: 1px solid #3a3a3a;
     border-top: 5px solid #c1121f;
@@ -58,40 +70,41 @@ nav ul li a:hover {
 h1 {
     color: #fcbf49;
     margin-top: 0;
+    margin-bottom: 15px;
 }
 
 h2 {
     color: #f77f00;
     margin-bottom: 25px;
+    font-size: 1.4rem;
+}
+
+p {
+    color: #f5f5f5;
+    line-height: 1.6;
 }
 
 /* FORM */
 
-.form-group {
-    margin-bottom: 20px;
-}
-
-label {
-    display: block;
-    margin-bottom: 8px;
+.form-label {
     font-weight: bold;
+    color: #f5f5f5;
 }
 
-/* INPUTS */
-
-input {
-    width: 100%;
-    max-width: 350px;
-    padding: 10px 12px;
+.form-control {
     border-radius: 8px;
+    padding: 10px 12px;
     border: 1px solid #555;
-    font-size: 16px;
-    box-sizing: border-box;
 }
 
-/* BUTTON */
+.form-control:focus {
+    border-color: #f77f00;
+    box-shadow: 0 0 0 0.2rem rgba(247, 127, 0, 0.2);
+}
 
-button {
+/* BUTTONS */
+
+.btn-custom {
     background-color: #f77f00;
     color: white;
     border: none;
@@ -99,10 +112,68 @@ button {
     border-radius: 8px;
     font-size: 16px;
     font-weight: bold;
-    cursor: pointer;
-    margin-top: 10px;
 }
 
-button:hover {
+.btn-custom:hover {
     background-color: #d96c00;
+    color: white;
+}
+
+/* ALERTS */
+
+.alert {
+    border-radius: 10px;
+}
+
+/* LISTS */
+
+.feature-list {
+    padding-left: 20px;
+    margin-top: 20px;
+}
+
+.feature-list li {
+    margin-bottom: 10px;
+}
+
+/* HOME MESSAGE BOX */
+
+.message-box {
+    background-color: #111111;
+    border: 1px solid #3a3a3a;
+    border-left: 4px solid #f77f00;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+/* DASHBOARD SECTIONS */
+
+.dashboard-links {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 20px;
+}
+
+.dashboard-links li {
+    background-color: #111111;
+    border: 1px solid #333;
+    border-left: 4px solid #c1121f;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    color: #f5f5f5;
+}
+
+/* SMALL SCREEN */
+
+@media (max-width: 768px) {
+    .page-container {
+        margin: 40px auto;
+        padding: 15px;
+    }
+
+    .card-custom {
+        padding: 25px;
+    }
 }

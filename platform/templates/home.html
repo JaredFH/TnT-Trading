@@ -1,51 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <title>Trading & Training (TnT)</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
+{% block title %}Home - TnT Stock Platform{% endblock %}
 
-<body>
+{% block content %}
+<div class="card-custom">
+    <h1>Trading & Training (TnT)</h1>
 
-    <nav>
-        <ul>
-            <li><a href="/login">Login</a></li>
-            <li><a href="/register">Create account</a></li>
+    {% if current_user.is_authenticated %}
+        <h2>Welcome, {{ current_user.username }}!</h2>
 
-            {% if current_user.is_authenticated %}
-            <li><a href="/logout">Logout</a></li>
-            {% endif %}
-        </ul>
-    </nav>
-
-    <div class="page-container">
-        <div class="card">
-            {% if current_user.is_authenticated %}
-            <h1>Welcome, {{ current_user.username }}!</h1>
-
-            {% if current_user.role == "admin" %}
-            <h2>Admin Homepage</h2>
+        {% if current_user.role == "admin" %}
             <div class="message-box">
-                <p>This is visible only to admins.</p>
+                <p>You are logged in as an admin. Use the navigation bar to access your dashboard.</p>
             </div>
-
-            {% elif current_user.role == "user" %}
-            <h2>User Homepage</h2>
+        {% else %}
             <div class="message-box">
-                <p>This is visible only to regular users.</p>
+                <p>You are logged in as a user. Use the navigation bar to access your dashboard.</p>
             </div>
-
-            {% endif %}
-
-            {% else %}
-
-            <h1>You are not logged in</h1>
-
-            {% endif %}
+        {% endif %}
+    {% else %}
+        <h2>Stock Trading System</h2>
+        <div class="message-box">
+            <p>This platform allows users to create an account, log in, and access role-based dashboards for the stock trading system project.</p>
         </div>
-    </div>
-</body>
-
-</html>
+    {% endif %}
+</div>
+{% endblock %}

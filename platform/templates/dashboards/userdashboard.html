@@ -1,42 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Dashboard - TnT</title>
-</head>
+{% block title %}User Dashboard - TnT{% endblock %}
 
-<body>
+{% block content %}
+<div class="card-custom">
+    <h1>User Dashboard</h1>
 
-<nav>
+    <p>Welcome, {{ current_user.username }}!</p>
 
-    <ul>
-        <li><a href="/">Home</a></li>
-        <li><a href="/logout">Logout</a></li>
+    <h2>Manage your account</h2>
+
+    <ul class="dashboard-links">
+        <li>Portfolio</li>
+        <li>Account and Fund Management</li>
+        <li>Order History</li>
     </ul>
-
-</nav>
-
-{% if current_user.is_authenticated %}
-
-<h1> User Dashboard</h1>
-
-<p> Welcome, {{ current_user.username }}! </p>
-
-<h2> Manage your account </h2>
-
-<ul>
-    <li>Portfolio</li>
-    <li>Account and Fund Management</li>
-    <li>Order History</li>
-</ul>
-
-{% else %}
-
-<h1>You must be logged in to view this page.</h1>
-
-{% endif %}
-
-</body>
-</html>
+</div>
+{% endblock %}
