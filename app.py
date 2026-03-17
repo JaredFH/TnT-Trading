@@ -9,7 +9,7 @@ app = Flask(
     static_folder="platform/static"
 )
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:rootpassword@localhost/tnt_auth"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:password@localhost/tnt_auth"
 app.config["SECRET_KEY"] = "password"
 
 db = SQLAlchemy(app)
@@ -115,6 +115,23 @@ def admin_dashboard():
         return redirect(url_for("user_dashboard"))
 
     return render_template("dashboards/admindashboard.html")
+
+
+@app.route("/market")
+def market():
+    return render_template("market.html")
+
+
+@app.route("/portfolio")
+@login_required
+def portfolio():
+    return render_template("portfolio.html")
+
+
+@app.route("/trade")
+@login_required
+def trade():
+    return render_template("trade.html")
 
 
 if __name__ == "__main__":
