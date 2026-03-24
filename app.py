@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 app = Flask(
     __name__,
@@ -21,6 +22,8 @@ login_manager.login_view = "login"
 
 bcrypt = Bcrypt(app)
 
+def eastern_time():
+    return datetime.now(ZoneInfo("America/New_York"))
 
 class Users(UserMixin, db.Model):
     __tablename__ = "users"
@@ -32,21 +35,20 @@ class Users(UserMixin, db.Model):
     role                  = db.Column(db.String(50), default="user", nullable=False)  
     customerAccountNumber = db.Column(db.String(50), unique=True, nullable=True)      
     availableFunds        = db.Column(db.Numeric(12, 2), default=0.00, nullable=True) 
-    createdAt             = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updatedAt             = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    createdAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, nullable=False)
+    updatedAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, onupdate=eastern_time, nullable=False)
 
-# RELATIONSHIPS #
-# Users (Non-Admin) only #
-   # portfolios             = db.relationship("Portfolio", backref="user", lazy=True)
-    # orders                 = db.relationship("OrderHistory", backref="user", lazy=True)
-    # financial_transactions = db.relationship("FinancialTransaction", backref="user", lazy=True)
-
-# Admin only #
-    # companies    = db.relationship("Company", backref="created_by_admin", lazy=True)
-    # stocks       = db.relationship("StockInventory", backref="created_by_admin", lazy=True)
-   # working_days = db.relationship("WorkingDay", backref="created_by_admin", lazy=True)
-    # exceptions   = db.relationship("MarketException", backref="created_by_admin", lazy=True)
-
+class Company(db.Model):
+    __tablename__ = "company"
+    companyId          = db.Column(db.Integer, primary_key=True)
+    createdBy          = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    name               = db.Column(db.String(255), nullable=False)
+    description        = db.Column(db.Text, nullable=True)
+    stockTotalQuantity = db.Column(db.Integer, nullable=False)
+    ticker             = db.Column(db.String(10), nullable=False, unique=True)
+    currentMarketPrice = db.Column(db.Numeric(12, 2), nullable=False)
+    createdAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, nullable=False)
+    updatedAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, onupdate=eastern_time, nullable=False)
 
 
 with app.app_context():
