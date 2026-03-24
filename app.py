@@ -50,6 +50,30 @@ class Company(db.Model):
     createdAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, nullable=False)
     updatedAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, onupdate=eastern_time, nullable=False)
 
+class StockInventory(db.Model):
+    __tablename__      = "stock_inventory"
+    stockId            = db.Column(db.Integer, primary_key=True)
+    companyId          = db.Column(db.Integer, db.ForeignKey("company.companyId"), nullable=False)
+    administratorId    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    name               = db.Column(db.String(255), nullable=False)
+    ticker             = db.Column(db.String(10), nullable=False)
+    quantity           = db.Column(db.Integer, nullable=False)
+    initStockPrice     = db.Column(db.Numeric(12, 2), nullable=False)
+    currentMarketPrice = db.Column(db.Numeric(12, 2), nullable=False)
+    createdAt          = db.Column(db.DateTime(timezone=True), default=eastern_time, nullable=False)
+    updatedAt          = db.Column(db.DateTime(timezone=True), default=eastern_time, onupdate=eastern_time, nullable=False)
+
+class MarketPriceConfig(db.Model):
+    __tablename__         = "market_price_config"
+    configId              = db.Column(db.Integer, primary_key=True)
+    stockId               = db.Column(db.Integer, db.ForeignKey("stock_inventory.stockId"), nullable=False)
+    minPrice              = db.Column(db.Numeric(12, 2), nullable=False)
+    maxPrice              = db.Column(db.Numeric(12, 2), nullable=False)
+    updateIntervalSeconds = db.Column(db.Integer, nullable=False)
+    enabled               = db.Column(db.Boolean, nullable=False)
+    createdAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, nullable=False)
+    updatedAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, onupdate=eastern_time, nullable=False)
+
 
 with app.app_context():
     db.create_all()
