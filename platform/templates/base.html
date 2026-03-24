@@ -29,21 +29,23 @@
                     </li>
 
                     {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('portfolio') }}">Portfolio</a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('trade') }}">Trade</a>
-                        </li>
-
-                        {% if current_user.role == "admin" %}
+                        {% if current_user.is_customer %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+                                <a class="nav-link" href="{{ url_for('portfolio') }}">Portfolio</a>
                             </li>
-                        {% else %}
+
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('trade') }}">Trade</a>
+                            </li>
+
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('user_dashboard') }}">User Dashboard</a>
+                            </li>
+                        {% endif %}
+
+                        {% if current_user.is_admin %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
                             </li>
                         {% endif %}
 

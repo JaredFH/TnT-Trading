@@ -9,19 +9,19 @@
     {% if current_user.is_authenticated %}
         <h2>Welcome, {{ current_user.fullName }}!</h2>
 
-        {% if current_user.role == "admin" %}
+        {% if current_user.is_admin %}
             <div class="message-box">
-                <p>You are logged in as an admin. Use the navigation bar to access your dashboard.</p>
+                <p>You are logged in as an administrator. Use the navigation bar to access your dashboard and manage the system.</p>
             </div>
-        {% else %}
+        {% elif current_user.is_customer %}
             <div class="message-box">
-                <p>You are logged in as a user. Use the navigation bar to access your dashboard.</p>
+                <p>You are logged in as a customer. Use the navigation bar to access your dashboard, portfolio, and trading pages.</p>
             </div>
         {% endif %}
     {% else %}
         <h2>Stock Trading System</h2>
         <div class="message-box">
-            <p>This platform allows users to create an account, log in, and access role-based dashboards for the stock trading system project.</p>
+            <p>This platform allows customers to create accounts, log in, and access stock trading features, while administrators manage stock and system settings.</p>
         </div>
     {% endif %}
 </div>

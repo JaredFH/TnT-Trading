@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -12,7 +12,7 @@ app = Flask(
     static_folder="platform/static"
 )
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:password@localhost/tnt_auth"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:rootpassword@localhost/tnt_auth"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = "password"
 
@@ -46,7 +46,15 @@ class Customer(UserMixin, db.Model):
     updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
 
     def get_id(self):
-        return str(self.customerId)
+        return f"customer-{self.customerId}"
+
+    @property
+    def is_admin(self):
+        return False
+
+    @property
+    def is_customer(self):
+        return True
 
 
 class Company(db.Model):
@@ -62,7 +70,7 @@ class Company(db.Model):
     updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
 
 
-class Administrator(db.Model):
+class Administrator(UserMixin, db.Model):
     __tablename__ = "administrator"
 
     administratorId = db.Column(db.Integer, primary_key=True)
@@ -71,6 +79,17 @@ class Administrator(db.Model):
     hashedPassword = db.Column(db.String(255), nullable=False)
     createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
     updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
+
+    def get_id(self):
+        return f"admin-{self.administratorId}"
+
+    @property
+    def is_admin(self):
+        return True
+
+    @property
+    def is_customer(self):
+        return False
 
 
 class StockInventory(db.Model):
@@ -169,7 +188,15 @@ with app.app_context():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Customer.query.get(int(user_id))
+    if user_id.startswith("customer-"):
+        customer_id = int(user_id.split("-")[1])
+        return Customer.query.get(customer_id)
+
+    if user_id.startswith("admin-"):
+        admin_id = int(user_id.split("-")[1])
+        return Administrator.query.get(admin_id)
+
+    return None
 
 
 @app.route("/")
@@ -205,7 +232,7 @@ def register():
         try:
             db.session.add(new_customer)
             db.session.commit()
-            flash("Account created successfully. Please log in.", "success")
+            flash("Customer account created successfully. Please log in.", "success")
             return redirect(url_for("login"))
         except Exception as e:
             db.session.rollback()
@@ -215,6 +242,29 @@ def register():
     return render_template("auth/register.html")
 
 
+@app.route("/create-admin")
+def create_admin():
+    existing_admin = Administrator.query.filter_by(email="admin@gmail.com").first()
+    if existing_admin:
+        return "Admin already exists."
+
+    hashed_password = bcrypt.generate_password_hash("admin").decode("utf-8")
+
+    admin = Administrator(
+        fullName="Admin",
+        email="admin@gmail.com",
+        hashedPassword=hashed_password
+    )
+
+    try:
+        db.session.add(admin)
+        db.session.commit()
+        return "Admin created successfully."
+    except Exception as e:
+        db.session.rollback()
+        return str(e)
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -222,11 +272,16 @@ def login():
         password = request.form.get("password")
 
         customer = Customer.query.filter_by(email=email).first()
-
         if customer and bcrypt.check_password_hash(customer.hashedPassword, password):
             login_user(customer)
-            flash("Login successful.", "success")
+            flash("Customer login successful.", "success")
             return redirect(url_for("user_dashboard"))
+
+        admin = Administrator.query.filter_by(email=email).first()
+        if admin and bcrypt.check_password_hash(admin.hashedPassword, password):
+            login_user(admin)
+            flash("Administrator login successful.", "success")
+            return redirect(url_for("admin_dashboard"))
 
         flash("Invalid email or password.", "danger")
         return redirect(url_for("login"))
@@ -245,29 +300,46 @@ def logout():
 @app.route("/userdashboard")
 @login_required
 def user_dashboard():
+    if not current_user.is_customer:
+        flash("You do not have permission to view the user dashboard.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
     return render_template("dashboards/userdashboard.html")
 
 
 @app.route("/admindashboard")
 @login_required
 def admin_dashboard():
+    if not current_user.is_admin:
+        flash("You do not have permission to view the admin dashboard.", "danger")
+        return redirect(url_for("user_dashboard"))
+
     return render_template("dashboards/admindashboard.html")
 
 
 @app.route("/market")
 def market():
-    return render_template("market.html")
+    stocks = StockInventory.query.all()
+    return render_template("market.html", stocks=stocks)
 
 
 @app.route("/portfolio")
 @login_required
 def portfolio():
+    if not current_user.is_customer:
+        flash("Only customers can view portfolios.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
     return render_template("portfolio.html")
 
 
 @app.route("/trade")
 @login_required
 def trade():
+    if not current_user.is_customer:
+        flash("Only customers can access trading.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
     return render_template("trade.html")
 
 
