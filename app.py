@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
+from datetime import datetime
 
 app = Flask(
     __name__,
@@ -22,10 +23,30 @@ bcrypt = Bcrypt(app)
 
 
 class Users(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(250), unique=True, nullable=False)
-    password = db.Column(db.String(250), nullable=False)
-    role = db.Column(db.String(50), default="user", nullable=False)
+    __tablename__ = "users"
+    id                    = db.Column(db.Integer, primary_key=True)
+    fullname              = db.Column(db.String(255), nullable=False)
+    username              = db.Column(db.String(250), unique=True, nullable=False)
+    email                 = db.Column(db.String(255), unique=True, nullable=False)
+    password              = db.Column(db.String(255), nullable=False)
+    role                  = db.Column(db.String(50), default="user", nullable=False)  
+    customerAccountNumber = db.Column(db.String(50), unique=True, nullable=True)      
+    availableFunds        = db.Column(db.Numeric(12, 2), default=0.00, nullable=True) 
+    createdAt             = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updatedAt             = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+# RELATIONSHIPS #
+# Users (Non-Admin) only #
+    portfolios             = db.relationship("Portfolio", backref="user", lazy=True)
+    orders                 = db.relationship("OrderHistory", backref="user", lazy=True)
+    financial_transactions = db.relationship("FinancialTransaction", backref="user", lazy=True)
+
+# Admin only #
+    companies    = db.relationship("Company", backref="created_by_admin", lazy=True)
+    stocks       = db.relationship("StockInventory", backref="created_by_admin", lazy=True)
+    working_days = db.relationship("WorkingDay", backref="created_by_admin", lazy=True)
+    exceptions   = db.relationship("MarketException", backref="created_by_admin", lazy=True)
+
 
 
 with app.app_context():
