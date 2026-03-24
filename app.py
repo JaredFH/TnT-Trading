@@ -12,7 +12,7 @@ app = Flask(
     static_folder="platform/static"
 )
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:rootpassword@localhost/tnt_auth"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:password@localhost/tnt_auth"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = "password"
 
@@ -242,27 +242,6 @@ def register():
     return render_template("auth/register.html")
 
 
-@app.route("/create-admin")
-def create_admin():
-    existing_admin = Administrator.query.filter_by(email="admin@gmail.com").first()
-    if existing_admin:
-        return "Admin already exists."
-
-    hashed_password = bcrypt.generate_password_hash("admin").decode("utf-8")
-
-    admin = Administrator(
-        fullName="Admin",
-        email="admin@gmail.com",
-        hashedPassword=hashed_password
-    )
-
-    try:
-        db.session.add(admin)
-        db.session.commit()
-        return "Admin created successfully."
-    except Exception as e:
-        db.session.rollback()
-        return str(e)
 
 
 @app.route("/login", methods=["GET", "POST"])

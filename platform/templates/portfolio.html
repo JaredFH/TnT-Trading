@@ -4,7 +4,28 @@
 
 {% block content %}
 <div class="card-custom">
-    <h1>Portfolio</h1>
-    <p>This page will display the user's stock holdings.</p>
+    <h2>Portfolio Overview</h2>
+
+    <table class="table table-dark table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Stock Name</th>
+                <th>Ticker</th>
+                <th>Shares Owned</th>
+                <th>Avg Price</th>
+                <th>Total Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Placeholder rows for now -->
+            <tr>
+                <td>Apple</td>
+                <td>AAPL</td>
+                <td>10</td>
+                <td>$150.00</td>
+                <td>$1500.00</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 {% endblock %}
