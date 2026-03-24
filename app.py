@@ -1,9 +1,10 @@
 from flask import Flask, render_template, request, url_for, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 from flask_bcrypt import Bcrypt
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import uuid
 
 app = Flask(
     __name__,
@@ -12,6 +13,7 @@ app = Flask(
 )
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:password@localhost/tnt_auth"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = "password"
 
 db = SQLAlchemy(app)
@@ -22,57 +24,143 @@ login_manager.login_view = "login"
 
 bcrypt = Bcrypt(app)
 
-def eastern_time():
-    return datetime.now(ZoneInfo("America/New_York"))
 
-class Users(UserMixin, db.Model):
-    __tablename__ = "users"
-    id                    = db.Column(db.Integer, primary_key=True)
-    fullname              = db.Column(db.String(255), nullable=False)
-    username              = db.Column(db.String(250), unique=True, nullable=False)
-    email                 = db.Column(db.String(255), unique=True, nullable=False)
-    password              = db.Column(db.String(255), nullable=False)
-    role                  = db.Column(db.String(50), default="user", nullable=False)  
-    customerAccountNumber = db.Column(db.String(50), unique=True, nullable=True)      
-    availableFunds        = db.Column(db.Numeric(12, 2), default=0.00, nullable=True) 
-    createdAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, nullable=False)
-    updatedAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, onupdate=eastern_time, nullable=False)
+def arizona_time():
+    return datetime.now(ZoneInfo("America/Phoenix"))
+
+
+def generate_account_number():
+    return f"TNT{str(uuid.uuid4().int)[:6]}"
+
+
+class Customer(UserMixin, db.Model):
+    __tablename__ = "customer"
+
+    customerId = db.Column(db.Integer, primary_key=True)
+    fullName = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    customerAccountNumber = db.Column(db.String(50), unique=True, nullable=False)
+    hashedPassword = db.Column(db.String(255), nullable=False)
+    availableFunds = db.Column(db.Numeric(12, 2), nullable=False, default=0.00)
+    createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
+    updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
+
+    def get_id(self):
+        return str(self.customerId)
+
 
 class Company(db.Model):
     __tablename__ = "company"
-    companyId          = db.Column(db.Integer, primary_key=True)
-    createdBy          = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    name               = db.Column(db.String(255), nullable=False)
-    description        = db.Column(db.Text, nullable=True)
+
+    companyId = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
     stockTotalQuantity = db.Column(db.Integer, nullable=False)
-    ticker             = db.Column(db.String(10), nullable=False, unique=True)
+    ticker = db.Column(db.String(10), unique=True, nullable=False)
     currentMarketPrice = db.Column(db.Numeric(12, 2), nullable=False)
-    createdAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, nullable=False)
-    updatedAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, onupdate=eastern_time, nullable=False)
+    createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
+    updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
+
+
+class Administrator(db.Model):
+    __tablename__ = "administrator"
+
+    administratorId = db.Column(db.Integer, primary_key=True)
+    fullName = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    hashedPassword = db.Column(db.String(255), nullable=False)
+    createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
+    updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
+
 
 class StockInventory(db.Model):
-    __tablename__      = "stock_inventory"
-    stockId            = db.Column(db.Integer, primary_key=True)
-    companyId          = db.Column(db.Integer, db.ForeignKey("company.companyId"), nullable=False)
-    administratorId    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    name               = db.Column(db.String(255), nullable=False)
-    ticker             = db.Column(db.String(10), nullable=False)
-    quantity           = db.Column(db.Integer, nullable=False)
-    initStockPrice     = db.Column(db.Numeric(12, 2), nullable=False)
+    __tablename__ = "stockinventory"
+
+    stockId = db.Column(db.Integer, primary_key=True)
+    companyId = db.Column(db.Integer, db.ForeignKey("company.companyId"), nullable=False)
+    administratorId = db.Column(db.Integer, db.ForeignKey("administrator.administratorId"), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    ticker = db.Column(db.String(10), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    initStockPrice = db.Column(db.Numeric(12, 2), nullable=False)
     currentMarketPrice = db.Column(db.Numeric(12, 2), nullable=False)
-    createdAt          = db.Column(db.DateTime(timezone=True), default=eastern_time, nullable=False)
-    updatedAt          = db.Column(db.DateTime(timezone=True), default=eastern_time, onupdate=eastern_time, nullable=False)
+    createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
+    updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
+
 
 class MarketPriceConfig(db.Model):
-    __tablename__         = "market_price_config"
-    configId              = db.Column(db.Integer, primary_key=True)
-    stockId               = db.Column(db.Integer, db.ForeignKey("stock_inventory.stockId"), nullable=False)
-    minPrice              = db.Column(db.Numeric(12, 2), nullable=False)
-    maxPrice              = db.Column(db.Numeric(12, 2), nullable=False)
+    __tablename__ = "marketpriceconfig"
+
+    configId = db.Column(db.Integer, primary_key=True)
+    stockId = db.Column(db.Integer, db.ForeignKey("stockinventory.stockId"), nullable=False)
+    minPrice = db.Column(db.Numeric(12, 2), nullable=False)
+    maxPrice = db.Column(db.Numeric(12, 2), nullable=False)
     updateIntervalSeconds = db.Column(db.Integer, nullable=False)
-    enabled               = db.Column(db.Boolean, nullable=False)
-    createdAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, nullable=False)
-    updatedAt             = db.Column(db.DateTime(timezone=True), default=eastern_time, onupdate=eastern_time, nullable=False)
+    enabled = db.Column(db.Boolean, nullable=False)
+    createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
+    updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
+
+
+class Portfolio(db.Model):
+    __tablename__ = "portfolio"
+
+    portfolioId = db.Column(db.Integer, primary_key=True)
+    customerId = db.Column(db.Integer, db.ForeignKey("customer.customerId"), nullable=False)
+    stockId = db.Column(db.Integer, db.ForeignKey("stockinventory.stockId"), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
+    updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
+
+
+class OrderHistory(db.Model):
+    __tablename__ = "orderhistory"
+
+    orderId = db.Column(db.Integer, primary_key=True)
+    customerId = db.Column(db.Integer, db.ForeignKey("customer.customerId"), nullable=False)
+    stockId = db.Column(db.Integer, db.ForeignKey("stockinventory.stockId"), nullable=False)
+    administratorId = db.Column(db.Integer, db.ForeignKey("administrator.administratorId"), nullable=False)
+    type = db.Column(db.String(10), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Numeric(12, 2), nullable=False)
+    totalValue = db.Column(db.Numeric(12, 2), nullable=False)
+    status = db.Column(db.String(10), nullable=False)
+    createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
+    updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
+
+
+class FinancialTransaction(db.Model):
+    __tablename__ = "financialtransaction"
+
+    financialTransactionId = db.Column(db.Integer, primary_key=True)
+    customerId = db.Column(db.Integer, db.ForeignKey("customer.customerId"), nullable=False)
+    companyId = db.Column(db.Integer, db.ForeignKey("company.companyId"), nullable=False)
+    orderId = db.Column(db.Integer, db.ForeignKey("orderhistory.orderId"), nullable=False)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    type = db.Column(db.String(12), nullable=False)
+    createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
+
+
+class MarketException(db.Model):
+    __tablename__ = "exception"
+
+    exceptionId = db.Column(db.Integer, primary_key=True)
+    administratorId = db.Column(db.Integer, db.ForeignKey("administrator.administratorId"), nullable=False)
+    reason = db.Column(db.String(255), nullable=False)
+    holidayDate = db.Column(db.Date, nullable=False)
+    createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
+    updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
+
+
+class WorkingDay(db.Model):
+    __tablename__ = "workingday"
+
+    workingDayId = db.Column(db.Integer, primary_key=True)
+    administratorId = db.Column(db.Integer, db.ForeignKey("administrator.administratorId"), nullable=False)
+    dayOfWeek = db.Column(db.String(10), nullable=False)
+    startTime = db.Column(db.Time, nullable=False)
+    endTime = db.Column(db.Time, nullable=False)
+    createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
+    updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
 
 
 with app.app_context():
@@ -81,7 +169,7 @@ with app.app_context():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Users.query.get(int(user_id))
+    return Customer.query.get(int(user_id))
 
 
 @app.route("/")
@@ -93,39 +181,36 @@ def home():
 def register():
     if request.method == "POST":
         full_name = request.form.get("full_name")
-        username = request.form.get("username")
-        email     = request.form.get("email")
+        email = request.form.get("email")
         password = request.form.get("password")
 
-        existing_user = Users.query.filter_by(username=username).first()
-        if existing_user:
-            flash("Username already exists. Please choose another one.", "danger")
-            return redirect(url_for("register"))
-        
-        if Users.query.filter_by(email=email).first():
+        if Customer.query.filter_by(email=email).first():
             flash("An account with that email already exists.", "danger")
             return redirect(url_for("register"))
 
         hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
 
-        import uuid
-        account_number = str(uuid.uuid4())[:8].upper()
+        account_number = generate_account_number()
+        while Customer.query.filter_by(customerAccountNumber=account_number).first():
+            account_number = generate_account_number()
 
-        user = Users(
-            fullname=full_name,
-            username=username,
+        new_customer = Customer(
+            fullName=full_name,
             email=email,
-            password=hashed_password,
-            role="user",
             customerAccountNumber=account_number,
+            hashedPassword=hashed_password,
             availableFunds=0.00
         )
 
-        db.session.add(user)
-        db.session.commit()
-
-        flash("Account created successfully. Please log in.", "success")
-        return redirect(url_for("login"))
+        try:
+            db.session.add(new_customer)
+            db.session.commit()
+            flash("Account created successfully. Please log in.", "success")
+            return redirect(url_for("login"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error: {str(e)}", "danger")
+            return redirect(url_for("register"))
 
     return render_template("auth/register.html")
 
@@ -133,21 +218,17 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username")
+        email = request.form.get("email")
         password = request.form.get("password")
 
-        user = Users.query.filter_by(username=username).first()
+        customer = Customer.query.filter_by(email=email).first()
 
-        if user and bcrypt.check_password_hash(user.password, password):
-            login_user(user)
+        if customer and bcrypt.check_password_hash(customer.hashedPassword, password):
+            login_user(customer)
             flash("Login successful.", "success")
+            return redirect(url_for("user_dashboard"))
 
-            if user.role == "admin":
-                return redirect(url_for("admin_dashboard"))
-            else:
-                return redirect(url_for("user_dashboard"))
-
-        flash("Invalid username or password.", "danger")
+        flash("Invalid email or password.", "danger")
         return redirect(url_for("login"))
 
     return render_template("auth/login.html")
@@ -170,10 +251,6 @@ def user_dashboard():
 @app.route("/admindashboard")
 @login_required
 def admin_dashboard():
-    if current_user.role != "admin":
-        flash("You do not have permission to view that page.", "danger")
-        return redirect(url_for("user_dashboard"))
-
     return render_template("dashboards/admindashboard.html")
 
 
