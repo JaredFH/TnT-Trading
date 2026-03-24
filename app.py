@@ -37,15 +37,15 @@ class Users(UserMixin, db.Model):
 
 # RELATIONSHIPS #
 # Users (Non-Admin) only #
-    portfolios             = db.relationship("Portfolio", backref="user", lazy=True)
-    orders                 = db.relationship("OrderHistory", backref="user", lazy=True)
-    financial_transactions = db.relationship("FinancialTransaction", backref="user", lazy=True)
+   # portfolios             = db.relationship("Portfolio", backref="user", lazy=True)
+    # orders                 = db.relationship("OrderHistory", backref="user", lazy=True)
+    # financial_transactions = db.relationship("FinancialTransaction", backref="user", lazy=True)
 
 # Admin only #
-    companies    = db.relationship("Company", backref="created_by_admin", lazy=True)
-    stocks       = db.relationship("StockInventory", backref="created_by_admin", lazy=True)
-    working_days = db.relationship("WorkingDay", backref="created_by_admin", lazy=True)
-    exceptions   = db.relationship("MarketException", backref="created_by_admin", lazy=True)
+    # companies    = db.relationship("Company", backref="created_by_admin", lazy=True)
+    # stocks       = db.relationship("StockInventory", backref="created_by_admin", lazy=True)
+   # working_days = db.relationship("WorkingDay", backref="created_by_admin", lazy=True)
+    # exceptions   = db.relationship("MarketException", backref="created_by_admin", lazy=True)
 
 
 
@@ -66,20 +66,33 @@ def home():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+        full_name = request.form.get("full_name")
         username = request.form.get("username")
+        email     = request.form.get("email")
         password = request.form.get("password")
 
         existing_user = Users.query.filter_by(username=username).first()
         if existing_user:
             flash("Username already exists. Please choose another one.", "danger")
             return redirect(url_for("register"))
+        
+        if Users.query.filter_by(email=email).first():
+            flash("An account with that email already exists.", "danger")
+            return redirect(url_for("register"))
 
         hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
 
+        import uuid
+        account_number = str(uuid.uuid4())[:8].upper()
+
         user = Users(
+            fullname=full_name,
             username=username,
+            email=email,
             password=hashed_password,
-            role="user"
+            role="user",
+            customerAccountNumber=account_number,
+            availableFunds=0.00
         )
 
         db.session.add(user)
