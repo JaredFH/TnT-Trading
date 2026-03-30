@@ -312,13 +312,69 @@ def portfolio():
     return render_template("portfolio.html")
 
 
-@app.route("/trade")
+@app.route("/trade", methods=["GET", "POST"])
 @login_required
 def trade():
     if not current_user.is_customer:
         flash("Only customers can access trading.", "danger")
         return redirect(url_for("admin_dashboard"))
 
+    
+    stocks = StockInventory.query.all()
+
+    if request.method == "POST":
+        stock_id = request.form.get("stock_id")
+        quantity = int(request.form.get("quantity"))
+        action = request.form.get("action")
+
+        stock = StockInventory.query.get(stock_id)
+        price = float(stock.currentMarketPrice)
+        total_cost = price * quantity
+
+        if action == "buy":
+            if current_user.availableFunds < total_cost:
+                flash("Not enough funds. Please adjust the order or deposit additional funds.")
+                return redirect(url_for("trade"))
+            
+            current_user.availableFunds -= total_cost
+
+            portfolio = Portfolio.query.filter_by(
+                customerId=current_user.customerId,
+                stockId=stock.stockId,
+            ).first()
+
+            if portfolio:
+                portfolio.quantity += quantity
+            else:
+                new_entry = Portfolio(
+                    customerId=current_user.customerId,
+                    stockId=stock.stockId,
+                    quantity=quantity
+                )
+                db.session.add(new_entry)
+
+            flash("Stock purchased successfully.", "success")
+
+        elif action == "sell":
+            portfolio = Portfolio.query.filter_by(
+                customerId=current_user.customerId,
+                stockId=stock.stockId
+            ).first()
+
+            if not portfolio or portfolio.quantity < quantity:
+                flash("Not enough shares to sell.", "danger")
+                return redirect(url_for("trade"))
+            
+            portfolio.quantity -= quantity
+
+            if portfolio.quantity == 0:
+                db.session.delete(portfolio)
+
+            current_user.availableFunds += total_cost
+
+            flash("Stock sold successfully.", "success")
+        db.session.commit()
+        return redirect(url_for("trade"))
     return render_template("trade.html")
 
 
