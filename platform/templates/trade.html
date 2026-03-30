@@ -12,7 +12,7 @@
             <select class="form-control" name="stock_id">
                 {% for stock in stocks %}
 
-                    <option value="{{ stock.stockID }}">
+                    <option value="{{ stock.stockId }}">
                         {{ stock.ticker }} - ${{ stock.currentMarketPrice }}
                     </option>
                 {% endfor %}

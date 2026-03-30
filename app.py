@@ -66,6 +66,7 @@ class Company(db.Model):
     stockTotalQuantity = db.Column(db.Integer, nullable=False)
     ticker = db.Column(db.String(10), unique=True, nullable=False)
     currentMarketPrice = db.Column(db.Numeric(12, 2), nullable=False)
+    createdBy = db.Column(db.Integer, db.ForeignKey("administrator.administratorId"), nullable=False)
     createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
     updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
 
@@ -286,12 +287,52 @@ def user_dashboard():
     return render_template("dashboards/userdashboard.html")
 
 
-@app.route("/admindashboard")
+@app.route("/admindashboard", methods=["GET", "POST"])
 @login_required
 def admin_dashboard():
     if not current_user.is_admin:
         flash("You do not have permission to view the admin dashboard.", "danger")
         return redirect(url_for("user_dashboard"))
+    
+    if request.method == "POST":
+        company_name = request.form.get("company_name")
+        ticker = request.form.get("ticker").upper().strip()
+        quantity = int(request.form.get("quantity"))
+        initial_price = float(request.form.get("initial_price"))
+
+        if quantity < 0 or initial_price < 0:
+            flash("Quantity and price must be greater than or equal to 0.", "danger")
+            return redirect(url_for("admin_dashboard"))
+        
+        existing_stock = StockInventory.query.filter_by(ticker=ticker).first()
+        if existing_stock:
+            flash("That ticker already exists.", "danger")
+            return redirect(url_for("admin_dashboard"))
+        
+        new_company = Company(
+            name=company_name,
+            stockTotalQuantity=quantity,
+            ticker=ticker,
+            currentMarketPrice=initial_price,
+            createdBy=current_user.administratorId
+        )
+        db.session.add(new_company)
+        db.session.flush()
+
+        new_stock = StockInventory(
+            companyId=new_company.companyId,
+            administratorId=current_user.administratorId,
+            name=company_name,
+            ticker=ticker,
+            quantity=quantity,
+            initStockPrice=initial_price,
+            currentMarketPrice=initial_price
+        )
+        db.session.add(new_stock)
+        db.session.commit()
+
+        flash("Stock created successfully.", "success")
+        return redirect(url_for("admin_dashboard"))
 
     return render_template("dashboards/admindashboard.html")
 
@@ -375,7 +416,7 @@ def trade():
             flash("Stock sold successfully.", "success")
         db.session.commit()
         return redirect(url_for("trade"))
-    return render_template("trade.html")
+    return render_template("trade.html", stocks=stocks)
 
 
 if __name__ == "__main__":
