@@ -360,7 +360,6 @@ def trade():
         flash("Only customers can access trading.", "danger")
         return redirect(url_for("admin_dashboard"))
 
-    
     stocks = StockInventory.query.all()
 
     if request.method == "POST":
@@ -369,7 +368,8 @@ def trade():
         action = request.form.get("action")
 
         stock = StockInventory.query.get(stock_id)
-        price = float(stock.currentMarketPrice)
+        
+        price = stock.currentMarketPrice 
         total_cost = price * quantity
 
         if action == "buy":
@@ -377,7 +377,12 @@ def trade():
                 flash("Not enough funds. Please adjust the order or deposit additional funds.")
                 return redirect(url_for("trade"))
             
+            if stock.quantity < quantity:
+                flash(f"Not enough shares available in the market. Only {stock.quantity} left.", "danger")
+                return redirect(url_for("trade"))
+            
             current_user.availableFunds -= total_cost
+            stock.quantity -= quantity
 
             portfolio = Portfolio.query.filter_by(
                 customerId=current_user.customerId,
@@ -412,10 +417,13 @@ def trade():
                 db.session.delete(portfolio)
 
             current_user.availableFunds += total_cost
+            stock.quantity += quantity
 
             flash("Stock sold successfully.", "success")
+            
         db.session.commit()
         return redirect(url_for("trade"))
+        
     return render_template("trade.html", stocks=stocks)
 
 
