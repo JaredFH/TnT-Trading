@@ -350,7 +350,12 @@ def portfolio():
         flash("Only customers can view portfolios.", "danger")
         return redirect(url_for("admin_dashboard"))
 
-    return render_template("portfolio.html")
+    user_portfolio = db.session.query(Portfolio, StockInventory)\
+        .join(StockInventory, Portfolio.stockId == StockInventory.stockId)\
+        .filter(Portfolio.customerId == current_user.customerId)\
+        .all()
+
+    return render_template("portfolio.html", portfolio_items=user_portfolio)
 
 
 @app.route("/trade", methods=["GET", "POST"])
