@@ -12,19 +12,24 @@
                 <th>Stock Name</th>
                 <th>Ticker</th>
                 <th>Shares Owned</th>
-                <th>Avg Price</th>
+                <th>Current Price</th>
                 <th>Total Value</th>
             </tr>
         </thead>
         <tbody>
-            <!-- Placeholder rows for now -->
+            {% for port, stock in portfolio_items %}
             <tr>
-                <td>Apple</td>
-                <td>AAPL</td>
-                <td>10</td>
-                <td>$150.00</td>
-                <td>$1500.00</td>
+                <td>{{ stock.name }}</td>
+                <td>{{ stock.ticker }}</td>
+                <td>{{ port.quantity }}</td>
+                <td>${{ "%.2f"|format(stock.currentMarketPrice) }}</td>
+                <td>${{ "%.2f"|format(port.quantity * stock.currentMarketPrice) }}</td>
             </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center">Your portfolio is empty. Go to the Trade Center to buy stocks!</td>
+            </tr>
+            {% endfor %}
         </tbody>
     </table>
 </div>
