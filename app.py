@@ -277,13 +277,36 @@ def logout():
     return redirect(url_for("home"))
 
 
-@app.route("/userdashboard")
+@app.route("/userdashboard", methods=["GET", "POST"])
 @login_required
 def user_dashboard():
     if not current_user.is_customer:
         flash("You do not have permission to view the user dashboard.", "danger")
         return redirect(url_for("admin_dashboard"))
+    
+    if request.method == "POST":
+        amount = float(request.form.get("amount"))
+        action = request.form.get("action")
 
+        if amount <= 0:
+            flash("Amount must be greater than 0.", "danger")
+            return redirect(url_for("user_dashboard"))
+    
+        if action == "deposit":
+            current_user.availableFunds = float(current_user.availableFunds) + amount
+            db.session.commit()
+            flash("Deposited successfully!")
+    
+        elif action == "withdraw":
+            if float(current_user.availableFunds) < amount:
+                flash("Insufficient funds, you cannot withdraw more than is available.")
+                return redirect(url_for("user_dashboard"))
+        
+            current_user.availableFunds = float(current_user.availbleFunds) - amount
+            db.session.commit()
+            flash("Funds withdrawn successfully.")
+
+        return redirect(url_for("user_dashboard"))
     return render_template("dashboards/userdashboard.html")
 
 
@@ -378,7 +401,7 @@ def trade():
         total_cost = price * quantity
 
         if action == "buy":
-            if current_user.availableFunds < total_cost:
+            if float(current_user.availableFunds) < total_cost:
                 flash("Not enough funds. Please adjust the order or deposit additional funds.")
                 return redirect(url_for("trade"))
             

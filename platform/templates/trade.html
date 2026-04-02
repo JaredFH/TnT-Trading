@@ -6,23 +6,28 @@
 <div class="card-custom">
     <h2>Trade Center</h2>
 
-    <form class="mt-3" method="POST" action="{{ url_for('trade') }}">
+    <form class="mt-3" method="POST" action="{{ url_for('trade') }}" id="tradeForm">
+    
         <div class="mb-3">
             <label class="form-label">Select Stock</label>
-            <select class="form-control" name="stock_id">
+            <select class="form-control" name="stock_id" id="stockSelect">
                 {% for stock in stocks %}
 
-                    <option value="{{ stock.stockId }}">
+                    <option 
+                        value="{{ stock.stockId }}"
+                        data-name="{{ stock.name }}"
+                        data-ticker="{{ stock.ticker }}"
+                        data-price="{{ stock.currentMarketPrice }}"
+                    >
                         {{ stock.ticker }} - ${{ stock.currentMarketPrice }}
                     </option>
                 {% endfor %}
-
             </select>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Quantity</label>
-            <input type="number" name="quantity" class="form-control" placeholder="Enter quantity" min="1" required>
+            <input type="number" name="quantity" id="quantityInput" class="form-control" placeholder="Enter quantity" min="1" required>
         </div>
 
         <div class="d-flex gap-2">
@@ -31,4 +36,29 @@
         </div>
     </form>
 </div>
+
+<script>
+document.getElementById("tradeForm").addEventListener("submit", function(event) {
+    const selectedOption = document.getElementById("stockSelect").selectedOptions[0];
+    const quantity = document.getElementById("quantityInput").value;
+    const action = event.submitter.value;
+
+    const companyName = selectedOption.dataset.name;
+    const ticker = selectedOption.dataset.ticker;
+    const price = parseFloat(selectedOption.dataset.price);
+    const totalPrice = (quantity * price).toFixed(2);
+
+    let message = ""
+
+    if (action == "buy") {
+        message = `Would you like to buy ${quantity} share(s) of ${companyName} (${ticker}) for ${totalPrice}?`;
+    } else {
+        message = `Would you like to sell ${quantity} share(s) of ${companyName} (${ticker}) for ${totalPrice}?`;
+    }
+
+    if (!confirm(message)) {
+        event.preventDefault();
+    }
+});
+</script>
 {% endblock %}
