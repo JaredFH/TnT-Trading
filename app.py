@@ -427,6 +427,19 @@ def trade():
                 )
                 db.session.add(new_entry)
 
+            admin = Administrator.query.first()
+            new_order = OrderHistory(
+                customerId=current_user.customerId,
+                stockId=stock.stockId,
+                administratorId=admin.administratorId if admin else 1,
+                type="buy",
+                quantity=quantity,
+                price=price,
+                totalValue=total_cost,
+                status="completed"
+            )
+            db.session.add(new_order)
+
             flash("Stock purchased successfully.", "success")
 
         elif action == "sell":
@@ -447,6 +460,19 @@ def trade():
             current_user.availableFunds += total_cost
             stock.quantity += quantity
 
+            admin = Administrator.query.first()
+            new_order = OrderHistory(
+                customerId=current_user.customerId,
+                stockId=stock.stockId,
+                administratorId=admin.administratorId if admin else 1,
+                type="sell",
+                quantity=quantity,
+                price=price,
+                totalValue=total_cost,
+                status="completed"
+            )
+            db.session.add(new_order)
+
             flash("Stock sold successfully.", "success")
             
         db.session.commit()
@@ -454,6 +480,20 @@ def trade():
         
     return render_template("trade.html", stocks=stocks)
 
+@app.route("/orderhistory")
+@login_required
+def order_history():
+    if not current_user.is_customer:
+        flash("Only customers can view order history.", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+    orders = db.session.query(OrderHistory, StockInventory)\
+        .join(StockInventory, OrderHistory.stockId == StockInventory.stockId)\
+        .filter(OrderHistory.customerId == current_user.customerId)\
+        .order_by(OrderHistory.createdAt.desc())\
+        .all()
+
+    return render_template("orderhistory.html", orders=orders)
 
 if __name__ == "__main__":
     app.run(debug=True)
