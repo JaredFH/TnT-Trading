@@ -302,7 +302,7 @@ def user_dashboard():
                 flash("Insufficient funds, you cannot withdraw more than is available.")
                 return redirect(url_for("user_dashboard"))
         
-            current_user.availableFunds = float(current_user.availbleFunds) - amount
+            current_user.availableFunds = float(current_user.availableFunds) - amount
             db.session.commit()
             flash("Funds withdrawn successfully.")
 
