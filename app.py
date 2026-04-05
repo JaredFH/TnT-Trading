@@ -483,15 +483,14 @@ def trade():
 @app.route("/orderhistory")
 @login_required
 def order_history():
-    if not current_user.is_customer:
-        flash("Only customers can view order history.", "danger")
-        return redirect(url_for("admin_dashboard"))
+    query = db.session.query(OrderHistory, StockInventory, Customer)\
+        .join(StockInventory, StockInventory.stockId == OrderHistory.stockId)\
+        .join(Customer, Customer.customerId == OrderHistory.customerId)
 
-    orders = db.session.query(OrderHistory, StockInventory)\
-        .join(StockInventory, OrderHistory.stockId == StockInventory.stockId)\
-        .filter(OrderHistory.customerId == current_user.customerId)\
-        .order_by(OrderHistory.createdAt.desc())\
-        .all()
+    if current_user.is_customer:
+        query = query.filter(OrderHistory.customerId == current_user.customerId)
+
+    orders = query.order_by(OrderHistory.createdAt.desc()).all()
 
     return render_template("orderhistory.html", orders=orders)
 
