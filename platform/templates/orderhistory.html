@@ -2,8 +2,10 @@
 
 {% block title %}Order History - TnT{% endblock %}
 
+{% block container_class %}page-container-wide{% endblock %}
+
 {% block content %}
-<div class="card-custom">
+<div class="card-custom card-custom-wide">
     <h2>Order History</h2>
 
     <div class="table-responsive mt-4">
@@ -58,7 +60,11 @@
     </div>
 
     <div class="mt-4">
-        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary">Back to Admin Dashboard</a>
+        {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary">Back to Admin Dashboard</a>
+        {% else %}
+            <a href="{{ url_for('user_dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
