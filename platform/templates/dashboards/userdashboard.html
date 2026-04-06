@@ -12,9 +12,9 @@
     <h2>Manage your account</h2>
 
     <ul class="dashboard-links">
-        <li>Portfolio</li>
-        <li>Account and Fund Management</li>
-        <li>Order History</li>
+        <li><a href="{{ url_for('portfolio') }}" class="text-decoration-none text-light d-block">Portfolio</a></li>
+        <li><a href="{{ url_for('fund_management') }}" class="text-decoration-none text-light d-block">Account and Fund Management</a></li>
+        <li><a href="{{ url_for('order_history') }}" class="text-decoration-none text-light d-block">Order History</a></li>
     </ul>
 
     <h3 class="mt-4">Deposit / Withdraw Funds</h3>
