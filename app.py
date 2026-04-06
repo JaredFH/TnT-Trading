@@ -12,12 +12,12 @@ app = Flask(
     static_folder="platform/static"
 )
 
-<<<<<<< Updated upstream
+
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:password@localhost/tnt_auth"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-=======
+
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:rootpassword@localhost/tnt_auth"
->>>>>>> Stashed changes
+
 app.config["SECRET_KEY"] = "password"
 
 db = SQLAlchemy(app)
