@@ -52,6 +52,10 @@ body {
     padding: 20px;
 }
 
+.page-container-wide {
+    max-width: 1400px;
+}
+
 /* CARD */
 
 .card-custom {
@@ -63,6 +67,10 @@ body {
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
     max-width: 700px;
     margin: 0 auto;
+}
+
+.card-custom-wide {
+    max-width: 100%;
 }
 
 /* HEADINGS */
