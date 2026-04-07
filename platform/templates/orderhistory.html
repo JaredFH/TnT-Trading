@@ -22,6 +22,7 @@
                         <th>Total Value</th>
                         <th>Status</th>
                         <th>Date</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -50,6 +51,13 @@
                                 {% endif %}
                             </td>
                             <td>{{ order.createdAt.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>
+                                {% if order.status == 'pending' %}
+                                <form action="{{ url_for('cancel_order', order_id=order.orderId) }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+                                </form>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
