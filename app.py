@@ -16,8 +16,6 @@ app = Flask(
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:password@localhost/tnt_auth"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:rootpassword@localhost/tnt_auth"
-
 app.config["SECRET_KEY"] = "password"
 
 db = SQLAlchemy(app)
@@ -202,6 +200,22 @@ def load_user(user_id):
         return Administrator.query.get(admin_id)
 
     return None
+
+@app.before_request
+def auto_execute_orders():
+    try:
+        pending_orders = OrderHistory.query.filter_by(status="pending").all()
+        now = arizona_time()
+        updated = False
+        for order in pending_orders:
+            order_time = order.createdAt if order.createdAt.tzinfo else order.createdAt.replace(tzinfo=ZoneInfo("America/Phoenix"))
+            if (now - order_time).total_seconds() >= 30:
+                order.status = "completed"
+                updated = True
+        if updated:
+            db.session.commit()
+    except Exception:
+        pass
 
 
 @app.route("/")
@@ -440,7 +454,7 @@ def trade():
                 quantity=quantity,
                 price=price,
                 totalValue=total_cost,
-                status="completed"
+                status="pending"
             )
             db.session.add(new_order)
 
@@ -473,7 +487,7 @@ def trade():
                 quantity=quantity,
                 price=price,
                 totalValue=total_cost,
-                status="completed"
+                status="pending"
             )
             db.session.add(new_order)
 
@@ -483,6 +497,35 @@ def trade():
         return redirect(url_for("trade"))
         
     return render_template("trade.html", stocks=stocks)
+
+@app.route("/cancel_order/<int:order_id>", methods=["POST"])
+@login_required
+def cancel_order(order_id):
+    order = OrderHistory.query.get_or_404(order_id)
+    stock = StockInventory.query.get(order.stockId)
+
+    if order.type == "buy":
+        current_user.availableFunds += order.totalValue
+        stock.quantity += order.quantity
+        portfolio = Portfolio.query.filter_by(customerId=current_user.customerId, stockId=stock.stockId).first()
+        if portfolio:
+            portfolio.quantity -= order.quantity
+            if portfolio.quantity <= 0:
+                db.session.delete(portfolio)
+    elif order.type == "sell":
+        current_user.availableFunds -= order.totalValue
+        stock.quantity -= order.quantity
+        portfolio = Portfolio.query.filter_by(customerId=current_user.customerId, stockId=stock.stockId).first()
+        if portfolio:
+            portfolio.quantity += order.quantity
+        else:
+            new_entry = Portfolio(customerId=current_user.customerId, stockId=stock.stockId, quantity=order.quantity)
+            db.session.add(new_entry)
+
+    order.status = "canceled"
+    db.session.commit()
+    flash("Order canceled successfully.", "success")
+    return redirect(url_for("order_history"))
 
 @app.route("/orderhistory")
 @login_required
