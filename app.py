@@ -46,6 +46,10 @@ def refresh_stock_price(stock):
     
     now = arizona_time()
     last_update = stock.updatedAt or stock.createdAt
+    
+    if last_update.tzinfo is None:
+        last_update = last_update.replace(tzinfo=ZoneInfo("America/Phoenix"))
+    
     seconds_since_update = (now - last_update).total_seconds()
 
     if seconds_since_update < config.updateIntervalSeconds:
