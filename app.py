@@ -4,7 +4,9 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from flask_bcrypt import Bcrypt
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from decimal import Decimal, ROUND_HALF_UP
 import uuid
+import random
 
 app = Flask(
     __name__,
@@ -32,6 +34,51 @@ def arizona_time():
 
 def generate_account_number():
     return f"TNT{str(uuid.uuid4().int)[:6]}"
+
+def refresh_stock_price(stock):
+    config = MarketPriceConfig.query.filter_by(
+        stockId=stock.stockId,
+        enabled=True
+    ).first()
+
+    if not config:
+        return
+    
+    now = arizona_time()
+    last_update = stock.updatedAt or stock.createdAt
+    seconds_since_update = (now - last_update).total_seconds()
+
+    if seconds_since_update < config.updateIntervalSeconds:
+        return
+    
+    current_price = Decimal(str(stock.currentMarketPrice))
+    min_price = Decimal(str(config.minPrice))
+    max_price = Decimal(str(config.maxPrice))
+
+    percent_change = Decimal(str(random.uniform(-0.03, 0.03)))
+    new_price = current_price * (Decimal("1.00") + percent_change)
+
+    if new_price < min_price:
+        new_price = min_price
+    elif new_price > max_price:
+        new_price = max_price
+
+    new_price = new_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    stock.currentMarketPrice = new_price
+
+    company = Company.query.get(stock.companyId)
+    if company:
+        company.currentMarketPrice = new_price
+        company.updatedAt = now
+
+    stock.updatedAt = now
+
+def refresh_all_stock_prices(stocks):
+    for stock in stocks:
+        refresh_stock_price(stock)
+    db.session.commit()
+
 
 
 VALID_WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
@@ -400,6 +447,16 @@ def admin_dashboard():
                 currentMarketPrice=initial_price
             )
             db.session.add(new_stock)
+            db.session.flush()
+
+            new_market_config = MarketPriceConfig(
+                stockId=new_stock.stockId,
+                minPrice=initial_price * 0.50,
+                maxPrice=initial_price * 1.50,
+                updateIntervalSeconds=30,
+                enabled=True
+            )
+            db.session.add(new_market_config)
             db.session.commit()
 
             flash("Stock created successfully.", "success")
@@ -472,6 +529,7 @@ def admin_dashboard():
 @app.route("/market")
 def market():
     stocks = StockInventory.query.all()
+    refresh_all_stock_prices(stocks)
     schedules = WorkingDay.query.order_by(WorkingDay.dayOfWeek.asc()).all()
 
     return render_template("market.html", stocks=stocks, schedules=schedules)
@@ -500,6 +558,7 @@ def trade():
         return redirect(url_for("admin_dashboard"))
 
     stocks = StockInventory.query.all()
+    refresh_all_stock_prices(stocks)
 
     if request.method == "POST":
         market_open, market_message = is_market_open()
@@ -512,6 +571,9 @@ def trade():
         action = request.form.get("action")
 
         stock = StockInventory.query.get(stock_id)
+
+        refresh_stock_price(stock)
+        db.session.commit()
 
         price = stock.currentMarketPrice
         total_cost = price * quantity
