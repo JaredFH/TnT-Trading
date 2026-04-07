@@ -12,12 +12,8 @@ app = Flask(
     static_folder="platform/static"
 )
 
-
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:password@localhost/tnt_auth"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:rootpassword@localhost/tnt_auth"
-
 app.config["SECRET_KEY"] = "password"
 
 db = SQLAlchemy(app)
@@ -35,6 +31,35 @@ def arizona_time():
 
 def generate_account_number():
     return f"TNT{str(uuid.uuid4().int)[:6]}"
+
+
+VALID_WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+
+
+def is_market_open():
+    now = arizona_time()
+    today_name = now.strftime("%A")
+    today_date = now.date()
+    current_time = now.time()
+
+    if today_name not in VALID_WEEKDAYS:
+        return False, "Market is closed on weekends."
+
+    holiday = MarketException.query.filter_by(holidayDate=today_date).first()
+    if holiday:
+        return False, f"Market is closed today: {holiday.reason}"
+
+    working_day = WorkingDay.query.filter_by(dayOfWeek=today_name).first()
+    if not working_day:
+        return False, f"No market hours have been set for {today_name}."
+
+    if current_time < working_day.startTime or current_time > working_day.endTime:
+        return False, (
+            f"Market is closed right now. Hours for {today_name} are "
+            f"{working_day.startTime.strftime('%H:%M')} to {working_day.endTime.strftime('%H:%M')}."
+        )
+
+    return True, "Market is open."
 
 
 class Customer(UserMixin, db.Model):
@@ -247,8 +272,6 @@ def register():
     return render_template("auth/register.html")
 
 
-
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -287,7 +310,7 @@ def user_dashboard():
     if not current_user.is_customer:
         flash("You do not have permission to view the user dashboard.", "danger")
         return redirect(url_for("admin_dashboard"))
-    
+
     if request.method == "POST":
         amount = float(request.form.get("amount"))
         action = request.form.get("action")
@@ -295,22 +318,23 @@ def user_dashboard():
         if amount <= 0:
             flash("Amount must be greater than 0.", "danger")
             return redirect(url_for("user_dashboard"))
-    
+
         if action == "deposit":
             current_user.availableFunds = float(current_user.availableFunds) + amount
             db.session.commit()
             flash("Deposited successfully!")
-    
+
         elif action == "withdraw":
             if float(current_user.availableFunds) < amount:
                 flash("Insufficient funds, you cannot withdraw more than is available.")
                 return redirect(url_for("user_dashboard"))
-        
+
             current_user.availableFunds = float(current_user.availableFunds) - amount
             db.session.commit()
             flash("Funds withdrawn successfully.")
 
         return redirect(url_for("user_dashboard"))
+
     return render_template("dashboards/userdashboard.html")
 
 
@@ -320,54 +344,120 @@ def admin_dashboard():
     if not current_user.is_admin:
         flash("You do not have permission to view the admin dashboard.", "danger")
         return redirect(url_for("user_dashboard"))
-    
+
     if request.method == "POST":
-        company_name = request.form.get("company_name")
-        ticker = request.form.get("ticker").upper().strip()
-        quantity = int(request.form.get("quantity"))
-        initial_price = float(request.form.get("initial_price"))
+        form_type = request.form.get("form_type")
 
-        if quantity < 0 or initial_price < 0:
-            flash("Quantity and price must be greater than or equal to 0.", "danger")
+        if form_type == "create_stock":
+            company_name = request.form.get("company_name")
+            ticker = request.form.get("ticker").upper().strip()
+            quantity = int(request.form.get("quantity"))
+            initial_price = float(request.form.get("initial_price"))
+
+            if quantity < 0 or initial_price < 0:
+                flash("Quantity and price must be greater than or equal to 0.", "danger")
+                return redirect(url_for("admin_dashboard"))
+
+            existing_stock = StockInventory.query.filter_by(ticker=ticker).first()
+            if existing_stock:
+                flash("That ticker already exists.", "danger")
+                return redirect(url_for("admin_dashboard"))
+
+            new_company = Company(
+                name=company_name,
+                stockTotalQuantity=quantity,
+                ticker=ticker,
+                currentMarketPrice=initial_price,
+                createdBy=current_user.administratorId
+            )
+            db.session.add(new_company)
+            db.session.flush()
+
+            new_stock = StockInventory(
+                companyId=new_company.companyId,
+                administratorId=current_user.administratorId,
+                name=company_name,
+                ticker=ticker,
+                quantity=quantity,
+                initStockPrice=initial_price,
+                currentMarketPrice=initial_price
+            )
+            db.session.add(new_stock)
+            db.session.commit()
+
+            flash("Stock created successfully.", "success")
             return redirect(url_for("admin_dashboard"))
-        
-        existing_stock = StockInventory.query.filter_by(ticker=ticker).first()
-        if existing_stock:
-            flash("That ticker already exists.", "danger")
+
+        elif form_type == "save_schedule":
+            day_of_week = request.form.get("day_of_week")
+            start_time = datetime.strptime(request.form.get("start_time"), "%H:%M").time()
+            end_time = datetime.strptime(request.form.get("end_time"), "%H:%M").time()
+
+            if day_of_week not in VALID_WEEKDAYS:
+                flash("Only Monday through Friday can be scheduled as market days.", "danger")
+                return redirect(url_for("admin_dashboard"))
+
+            if start_time >= end_time:
+                flash("Start time must be earlier than end time.", "danger")
+                return redirect(url_for("admin_dashboard"))
+
+            existing_day = WorkingDay.query.filter_by(dayOfWeek=day_of_week).first()
+
+            if existing_day:
+                existing_day.startTime = start_time
+                existing_day.endTime = end_time
+                existing_day.administratorId = current_user.administratorId
+                flash(f"{day_of_week} market hours updated successfully.", "success")
+            else:
+                new_day = WorkingDay(
+                    administratorId=current_user.administratorId,
+                    dayOfWeek=day_of_week,
+                    startTime=start_time,
+                    endTime=end_time
+                )
+                db.session.add(new_day)
+                flash(f"{day_of_week} market hours added successfully.", "success")
+
+            db.session.commit()
             return redirect(url_for("admin_dashboard"))
-        
-        new_company = Company(
-            name=company_name,
-            stockTotalQuantity=quantity,
-            ticker=ticker,
-            currentMarketPrice=initial_price,
-            createdBy=current_user.administratorId
-        )
-        db.session.add(new_company)
-        db.session.flush()
 
-        new_stock = StockInventory(
-            companyId=new_company.companyId,
-            administratorId=current_user.administratorId,
-            name=company_name,
-            ticker=ticker,
-            quantity=quantity,
-            initStockPrice=initial_price,
-            currentMarketPrice=initial_price
-        )
-        db.session.add(new_stock)
-        db.session.commit()
+        elif form_type == "add_holiday":
+            reason = request.form.get("reason").strip()
+            holiday_date = datetime.strptime(request.form.get("holiday_date"), "%Y-%m-%d").date()
 
-        flash("Stock created successfully.", "success")
-        return redirect(url_for("admin_dashboard"))
+            existing_exception = MarketException.query.filter_by(holidayDate=holiday_date).first()
+            if existing_exception:
+                flash("A market exception already exists for that date.", "danger")
+                return redirect(url_for("admin_dashboard"))
 
-    return render_template("dashboards/admindashboard.html")
+            new_exception = MarketException(
+                administratorId=current_user.administratorId,
+                reason=reason,
+                holidayDate=holiday_date
+            )
+            db.session.add(new_exception)
+            db.session.commit()
+
+            flash("Market closure added successfully.", "success")
+            return redirect(url_for("admin_dashboard"))
+
+    schedules = WorkingDay.query.order_by(WorkingDay.dayOfWeek.asc()).all()
+    holidays = MarketException.query.order_by(MarketException.holidayDate.asc()).all()
+
+    return render_template(
+        "dashboards/admindashboard.html",
+        schedules=schedules,
+        holidays=holidays,
+        valid_weekdays=VALID_WEEKDAYS
+    )
 
 
 @app.route("/market")
 def market():
     stocks = StockInventory.query.all()
-    return render_template("market.html", stocks=stocks)
+    schedules = WorkingDay.query.order_by(WorkingDay.dayOfWeek.asc()).all()
+
+    return render_template("market.html", stocks=stocks, schedules=schedules)
 
 
 @app.route("/portfolio")
@@ -395,24 +485,29 @@ def trade():
     stocks = StockInventory.query.all()
 
     if request.method == "POST":
+        market_open, market_message = is_market_open()
+        if not market_open:
+            flash(market_message, "danger")
+            return redirect(url_for("trade"))
+
         stock_id = request.form.get("stock_id")
         quantity = int(request.form.get("quantity"))
         action = request.form.get("action")
 
         stock = StockInventory.query.get(stock_id)
-        
-        price = stock.currentMarketPrice 
+
+        price = stock.currentMarketPrice
         total_cost = price * quantity
 
         if action == "buy":
             if float(current_user.availableFunds) < total_cost:
                 flash("Not enough funds. Please adjust the order or deposit additional funds.")
                 return redirect(url_for("trade"))
-            
+
             if stock.quantity < quantity:
                 flash(f"Not enough shares available in the market. Only {stock.quantity} left.", "danger")
                 return redirect(url_for("trade"))
-            
+
             current_user.availableFunds -= total_cost
             stock.quantity -= quantity
 
@@ -455,7 +550,7 @@ def trade():
             if not portfolio or portfolio.quantity < quantity:
                 flash("Not enough shares to sell.", "danger")
                 return redirect(url_for("trade"))
-            
+
             portfolio.quantity -= quantity
 
             if portfolio.quantity == 0:
@@ -478,11 +573,12 @@ def trade():
             db.session.add(new_order)
 
             flash("Stock sold successfully.", "success")
-            
+
         db.session.commit()
         return redirect(url_for("trade"))
-        
+
     return render_template("trade.html", stocks=stocks)
+
 
 @app.route("/orderhistory")
 @login_required
@@ -497,6 +593,7 @@ def order_history():
     orders = query.order_by(OrderHistory.createdAt.desc()).all()
 
     return render_template("orderhistory.html", orders=orders)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

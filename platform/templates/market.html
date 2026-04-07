@@ -6,6 +6,21 @@
 <div class="card-custom">
     <h2>Market Overview</h2>
 
+    {% if schedules %}
+    <div class="alert alert-info mt-3">
+        <strong>Market Hours:</strong><br>
+        {% for schedule in schedules %}
+            {{ schedule.dayOfWeek }}: 
+            {{ schedule.startTime.strftime('%H:%M') }} - 
+            {{ schedule.endTime.strftime('%H:%M') }}<br>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-warning mt-3">
+        No market hours have been set by the administrator.
+    </div>
+    {% endif %}
+
     <table class="table table-dark table-striped mt-3">
         <thead>
             <tr>
