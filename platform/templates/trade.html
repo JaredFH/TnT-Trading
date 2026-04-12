@@ -6,6 +6,16 @@
 <div class="card-custom">
     <h2>Trade Center</h2>
 
+    {% if market_open %}
+        <div class="alert alert-success mt-3">
+            {{ market_message }}
+        </div>
+    {% else %}
+        <div class="alert alert-danger mt-3">
+            {{ market_message }}
+        </div>
+    {% endif %} 
+    
     <form class="mt-3" method="POST" action="{{ url_for('trade') }}" id="tradeForm">
     
         <div class="mb-3">
