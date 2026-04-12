@@ -550,6 +550,9 @@ def portfolio():
         .join(StockInventory, Portfolio.stockId == StockInventory.stockId)\
         .filter(Portfolio.customerId == current_user.customerId)\
         .all()
+    
+    owned_stocks = [stock for portfolio, stock in user_portfolio]
+    refresh_all_stock_prices(owned_stocks)
 
     return render_template("portfolio.html", portfolio_items=user_portfolio)
 
@@ -564,12 +567,10 @@ def trade():
     stocks = StockInventory.query.all()
     refresh_all_stock_prices(stocks)
 
+    market_open, market_message = is_market_open()
+
     if request.method == "POST":
         market_open, market_message = is_market_open()
-        if not market_open:
-            flash(market_message, "danger")
-            return redirect(url_for("trade"))
-
         stock_id = request.form.get("stock_id")
         quantity = int(request.form.get("quantity"))
         action = request.form.get("action")
@@ -582,9 +583,28 @@ def trade():
         price = stock.currentMarketPrice
         total_cost = price * quantity
 
+        if not market_open:
+            admin = Administrator.query.first()
+
+            new_order = OrderHistory(
+                customerId=current_user.customerId,
+                stockId=stock.stockId,
+                administratorId=admin.administratorId if admin else 1,
+                type=action,
+                quantity=quantity,
+                price=price,
+                totalValue=total_cost,
+                status="pending"
+            )
+            db.session.add(new_order)
+            db.session.commit()
+
+            flash("Market is currently closed. Your order has been placed in queue.")
+            return redirect(url_for("order_history"))
+
         if action == "buy":
             if float(current_user.availableFunds) < total_cost:
-                flash("Not enough funds. Please adjust the order or deposit additional funds.")
+                flash("Not enough funds. Please adjust the order or deposit additional funds.", "warning")
                 return redirect(url_for("trade"))
 
             if stock.quantity < quantity:
@@ -660,7 +680,12 @@ def trade():
         db.session.commit()
         return redirect(url_for("trade"))
 
-    return render_template("trade.html", stocks=stocks)
+    return render_template(
+        "trade.html", 
+        stocks=stocks, 
+        market_open=market_open, 
+        market_message=market_message
+        )
 
 
 
