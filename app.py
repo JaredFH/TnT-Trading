@@ -402,8 +402,29 @@ def user_dashboard():
             flash("Funds withdrawn successfully.")
 
         return redirect(url_for("user_dashboard"))
+    
+    portfolio_items = (
+        db.session.query(Portfolio, StockInventory)
+        .join(StockInventory, Portfolio.stockId == StockInventory.stockId)
+        .filter(Portfolio.customerId == current_user.customerId)
+        .all()
+        )
+    
+    stocks = [stock for _, stock in portfolio_items]
+    refresh_all_stock_prices(stocks)
 
-    return render_template("dashboards/userdashboard.html")
+    total_stock_value = sum(
+        portfolio.quantity * stock.currentMarketPrice
+        for portfolio, stock in portfolio_items
+    )
+
+    net_worth = float(current_user.availableFunds) + float(total_stock_value)
+
+    return render_template(
+        "dashboards/userdashboard.html",
+        total_stock_value=total_stock_value,
+        net_worth=net_worth
+        )
 
 
 @app.route("/admindashboard", methods=["GET", "POST"])
