@@ -13,6 +13,7 @@
                 <th>Ticker</th>
                 <th>Shares Owned</th>
                 <th>Current Price</th>
+                <th>% Change</th>
                 <th>Total Value</th>
             </tr>
         </thead>
@@ -23,11 +24,20 @@
                 <td>{{ stock.ticker }}</td>
                 <td>{{ port.quantity }}</td>
                 <td>${{ "%.2f"|format(stock.currentMarketPrice) }}</td>
+                <td>
+                    {% if stock.percent_change > 0 %}
+                        <span class="text-success">+{{ "%.2f"|format(stock.percent_change) }}%</span>
+                    {% elif stock.percent_change < 0 %}
+                        <span class="text-danger">{{ "%.2f"|format(stock.percent_change) }}%</span>
+                    {% else %}
+                        <span class="text-muted">0.00%</span>
+                    {% endif %}
+                </td>
                 <td>${{ "%.2f"|format(port.quantity * stock.currentMarketPrice) }}</td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" class="text-center">Your portfolio is empty. Go to the Trade Center to buy stocks!</td>
+                <td colspan="6" class="text-center">Your portfolio is empty. Go to the Trade Center to buy stocks!</td>
             </tr>
             {% endfor %}
         </tbody>

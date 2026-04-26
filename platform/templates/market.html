@@ -28,6 +28,7 @@
                 <th>Ticker</th>
                 <th>Quantity</th>
                 <th>Current Price</th>
+                <th>% Change</th>
             </tr>
         </thead>
         <tbody>
@@ -37,6 +38,15 @@
                 <td>{{ stock.ticker }}</td>
                 <td>{{ stock.quantity }}</td>
                 <td>${{ stock.currentMarketPrice }}</td>
+                <td>
+                    {% if stock.percent_change > 0 %}
+                        <span class="text-success">+{{ "%.2f"|format(stock.percent_change) }}%</span>
+                    {% elif stock.percent_change < 0 %}
+                        <span class="text-danger">{{ "%.2f"|format(stock.percent_change) }}%</span>
+                    {% else %}
+                        <span class="text-muted">0.00%</span>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

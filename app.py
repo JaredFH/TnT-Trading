@@ -188,6 +188,12 @@ class StockInventory(db.Model):
     createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
     updatedAt = db.Column(db.DateTime, default=arizona_time, onupdate=arizona_time, nullable=False)
 
+    @property
+    def percent_change(self):
+        if float(self.initStockPrice) > 0:
+            return ((float(self.currentMarketPrice) - float(self.initStockPrice)) / float(self.initStockPrice)) * 100.0
+        return 0.0
+
 
 class MarketPriceConfig(db.Model):
     __tablename__ = "marketpriceconfig"
@@ -418,12 +424,18 @@ def user_dashboard():
         for portfolio, stock in portfolio_items
     )
 
+    orders = OrderHistory.query.filter_by(customerId=current_user.customerId).all()
+    total_buys = sum(float(order.totalValue) for order in orders if order.type == "buy")
+    total_sells = sum(float(order.totalValue) for order in orders if order.type == "sell")
+
     net_worth = float(current_user.availableFunds) + float(total_stock_value)
+    net_worth_change = float(total_stock_value) + total_sells - total_buys
 
     return render_template(
         "dashboards/userdashboard.html",
         total_stock_value=total_stock_value,
-        net_worth=net_worth
+        net_worth=net_worth,
+        net_worth_change=net_worth_change
         )
 
 

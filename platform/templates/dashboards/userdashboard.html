@@ -10,6 +10,15 @@
     <p><strong>Available Funds:</strong> ${{ "%.2f"|format(current_user.availableFunds|float) }}</p>
     <p><strong>Total Stock Value:</strong> ${{ "%.2f"|format(total_stock_value|float) }}</p>
     <p><strong>Total Net Worth:</strong> ${{ "%.2f"|format(net_worth|float) }}</p>
+    <p><strong>Net Worth Change:</strong> 
+        {% if net_worth_change > 0 %}
+            <span class="text-success">+${{ "%.2f"|format(net_worth_change) }}</span>
+        {% elif net_worth_change < 0 %}
+            <span class="text-danger">-${{ "%.2f"|format(net_worth_change|abs) }}</span>
+        {% else %}
+            <span class="text-muted">$0.00</span>
+        {% endif %}
+    </p>
     <h2>Manage your account</h2>
 
     <ul class="dashboard-links">
