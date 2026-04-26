@@ -292,21 +292,24 @@ def load_user(user_id):
 
     return None
 
-@app.before_request
-def auto_execute_orders():
-    try:
-        pending_orders = OrderHistory.query.filter_by(status="pending").all()
-        now = arizona_time()
-        updated = False
-        for order in pending_orders:
-            order_time = order.createdAt if order.createdAt.tzinfo else order.createdAt.replace(tzinfo=ZoneInfo("America/Phoenix"))
-            if (now - order_time).total_seconds() >= 30:
-                order.status = "completed"
-                updated = True
-        if updated:
-            db.session.commit()
-    except Exception:
-        pass
+# TEMPORARILY DISABLED FOR BUILD DEMO
+# This was used to auto-complete pending orders after 30 seconds
+# Disabled so orders complete instantly for demo clarity
+# @app.before_request
+# def auto_execute_orders():
+#     try:
+#         pending_orders = OrderHistory.query.filter_by(status="pending").all()
+#         now = arizona_time()
+#         updated = False
+#         for order in pending_orders:
+#             order_time = order.createdAt if order.createdAt.tzinfo else order.createdAt.replace(tzinfo=ZoneInfo("America/Phoenix"))
+#             if (now - order_time).total_seconds() >= 30:
+#                 order.status = "completed"
+#                 updated = True
+#         if updated:
+#             db.session.commit()
+#     except Exception:
+#         pass
 
 
 @app.route("/")
@@ -677,7 +680,7 @@ def trade():
                 quantity=quantity,
                 price=price,
                 totalValue=total_cost,
-                status="pending"
+                status="completed"
             )
             db.session.add(new_order)
 
@@ -710,7 +713,7 @@ def trade():
                 quantity=quantity,
                 price=price,
                 totalValue=total_cost,
-                status="pending"
+                status="completed"
             )
             db.session.add(new_order)
 
