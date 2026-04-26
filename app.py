@@ -5,6 +5,7 @@ from flask_bcrypt import Bcrypt
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from decimal import Decimal, ROUND_HALF_UP
+from sqlalchemy import case
 import uuid
 import random
 
@@ -87,6 +88,11 @@ def refresh_all_stock_prices(stocks):
 
 VALID_WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
+def weekday_order_case():
+    return case(
+        {day: index for index, day in enumerate(VALID_WEEKDAYS)},
+        value=WorkingDay.dayOfWeek
+    )
 
 def is_market_open():
     now = arizona_time()
@@ -552,7 +558,7 @@ def admin_dashboard():
             flash("Market closure added successfully.", "success")
             return redirect(url_for("admin_dashboard"))
 
-    schedules = WorkingDay.query.order_by(WorkingDay.dayOfWeek.asc()).all()
+    schedules = WorkingDay.query.order_by(weekday_order_case()).all()
     holidays = MarketException.query.order_by(MarketException.holidayDate.asc()).all()
 
     return render_template(
@@ -567,7 +573,7 @@ def admin_dashboard():
 def market():
     stocks = StockInventory.query.all()
     refresh_all_stock_prices(stocks)
-    schedules = WorkingDay.query.order_by(WorkingDay.dayOfWeek.asc()).all()
+    schedules = WorkingDay.query.order_by(weekday_order_case()).all()
 
     return render_template("market.html", stocks=stocks, schedules=schedules)
 
