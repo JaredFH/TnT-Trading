@@ -246,8 +246,6 @@ class FinancialTransaction(db.Model):
 
     financialTransactionId = db.Column(db.Integer, primary_key=True)
     customerId = db.Column(db.Integer, db.ForeignKey("customer.customerId"), nullable=False)
-    companyId = db.Column(db.Integer, db.ForeignKey("company.companyId"), nullable=False)
-    orderId = db.Column(db.Integer, db.ForeignKey("orderhistory.orderId"), nullable=False)
     amount = db.Column(db.Numeric(12, 2), nullable=False)
     type = db.Column(db.String(12), nullable=False)
     createdAt = db.Column(db.DateTime, default=arizona_time, nullable=False)
