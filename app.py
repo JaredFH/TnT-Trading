@@ -402,6 +402,12 @@ def user_dashboard():
 
         if action == "deposit":
             current_user.availableFunds = float(current_user.availableFunds) + amount
+            transaction = FinancialTransaction(
+                customerId=current_user.customerId,
+                amount=amount,
+                type="deposit"
+            )
+            db.session.add(transaction)
             db.session.commit()
             flash("Deposited successfully!")
 
@@ -411,6 +417,12 @@ def user_dashboard():
                 return redirect(url_for("user_dashboard"))
 
             current_user.availableFunds = float(current_user.availableFunds) - amount
+            transaction = FinancialTransaction(
+                customerId=current_user.customerId,
+                amount=amount,
+                type="withdrawal"
+            )
+            db.session.add(transaction)
             db.session.commit()
             flash("Funds withdrawn successfully.")
 
